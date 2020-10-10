@@ -61,9 +61,16 @@
 #define PIN_ADC_CV_4 24 // Jumped on Rev2 from 22
 #define PIN_ADC_CV_3 25 // Jumped on Rev2 from 23
 
-#define LED_DRIVER_I2C i2c1_handle /**< & */
-
 using namespace daisy;
+
+static constexpr I2CHandle::Config field_led_i2c_config
+    = {I2CHandle::Config::Peripheral::I2C_1,
+       {{DSY_GPIOB, 8}, {DSY_GPIOB, 9}},
+       I2CHandle::Config::Speed::I2C_1MHZ};
+
+static LedDriverPca9685<2, true>::DmaBuffer DMA_BUFFER_MEM_SECTION
+    field_led_dma_buffer_a,
+    field_led_dma_buffer_b;
 
 void DaisyField::Init()
 {
@@ -102,9 +109,11 @@ void DaisyField::Init()
                              seed.GetPin(PIN_MUX_SEL_2));
     seed.adc.Init(adc_cfg, 5);
 
+    // Order of pots on the hardware connected to mux.
+    size_t pot_order[KNOB_LAST] = {0, 3, 1, 4, 2, 5, 6, 7};
     for(size_t i = 0; i < KNOB_LAST; i++)
     {
-        knob_[i].Init(seed.adc.GetMuxPtr(4, i), blockrate_);
+        knob_[i].Init(seed.adc.GetMuxPtr(4, pot_order[i]), blockrate_);
     }
     for(size_t i = 0; i < CV_LAST; i++)
     {
@@ -123,12 +132,14 @@ void DaisyField::Init()
     dsy_gpio_pin oled_pins[OledDisplay::NUM_PINS];
     oled_pins[OledDisplay::DATA_COMMAND] = seed.GetPin(PIN_OLED_CMD);
     oled_pins[OledDisplay::RESET]        = {DSY_GPIOX, 0}; // Not a real pin...
-    display_.Init(oled_pins);
+    display.Init(oled_pins);
 
     // LEDs
     // 2x PCA9685 addresses 0x00, and 0x02
-    uint8_t addr[2] = {0x00, 0x02};
-    dsy_led_driver_init(&seed.LED_DRIVER_I2C, addr, 2);
+    uint8_t   addr[2] = {0x00, 0x02};
+    I2CHandle i2c;
+    i2c.Init(field_led_i2c_config);
+    led_driver_.Init(i2c, addr, field_led_dma_buffer_a, field_led_dma_buffer_b);
 
     // Gate In
     dsy_gpio_pin gate_in_pin;
@@ -141,6 +152,26 @@ void DaisyField::Init()
     dsy_gpio_init(&gate_out_);
     dsy_dac_init(&seed.dac_handle, DSY_DAC_CHN_BOTH);
     dsy_tim_start();
+}
+
+void DaisyField::StartAudio(dsy_audio_callback cb)
+{
+    seed.StartAudio(cb);
+}
+
+void DaisyField::StartAudio(dsy_audio_mc_callback cb)
+{
+    seed.StartAudio(cb);
+}
+
+void DaisyField::ChangeAudioCallback(dsy_audio_callback cb)
+{
+    seed.ChangeAudioCallback(cb);
+}
+
+void DaisyField::ChangeAudioCallback(dsy_audio_mc_callback cb)
+{
+    seed.ChangeAudioCallback(cb);
 }
 
 void DaisyField::VegasMode()
@@ -181,21 +212,21 @@ void DaisyField::VegasMode()
         // Clear
         for(size_t i = 0; i < LED_LAST; i++)
         {
-            dsy_led_driver_set_led(i, 0.0f);
+            led_driver_.SetLed(i, 0.0f);
         }
         // Knob LEDs dance in order
-        dsy_led_driver_set_led(led_grp_a[idx], cube(key_bright));
-        dsy_led_driver_set_led(led_grp_b[idx], cube(1.0f - key_bright));
-        dsy_led_driver_set_led(led_grp_c[idx], key_bright);
+        led_driver_.SetLed(led_grp_a[idx], key_bright);
+        led_driver_.SetLed(led_grp_b[idx], 1.0f - key_bright);
+        led_driver_.SetLed(led_grp_c[idx], key_bright);
         // OLED moves a bar across the screen
         uint32_t bar_x = (now >> 4) % SSD1309_WIDTH;
-        display_.Fill(false);
+        display.Fill(false);
         for(size_t i = 0; i < SSD1309_HEIGHT; i++)
         {
-            display_.DrawPixel(bar_x, i, true);
+            display.DrawPixel(bar_x, i, true);
         }
-        display_.Update();
-        dsy_led_driver_update();
-        dsy_led_driver_update();
+
+        display.Update();
+        led_driver_.SwapBuffersAndTransmit();
     }
 }

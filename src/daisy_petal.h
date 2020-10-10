@@ -82,17 +82,27 @@ class DaisyPetal
      */
     void SetAudioBlockSize(size_t size);
 
-    /**
-       Start audio callback
-       \param cb Callback function.
+    /** Starts the callback
+    \cb Interleaved callback function
     */
     void StartAudio(dsy_audio_callback cb);
 
+    /** Starts the callback
+    \cb multichannel callback function
+    */
+    void StartAudio(dsy_audio_mc_callback cb);
+
     /**
-       Change callback function
-       \param cb New callback function.
-     */
+       Switch callback functions
+       \param cb New interleaved callback function.
+    */
     void ChangeAudioCallback(dsy_audio_callback cb);
+
+    /**
+       Switch callback functions
+       \param cb New multichannel callback function.
+    */
+    void ChangeAudioCallback(dsy_audio_mc_callback cb);
 
     /** Start analog to digital conversion. */
     void StartAdc();
@@ -161,8 +171,9 @@ class DaisyPetal
 
     inline uint16_t* adc_ptr(const uint8_t chn) { return seed.adc.GetPtr(chn); }
 
-    float  sample_rate_, callback_rate_;
-    size_t block_size_;
+    float                     sample_rate_, callback_rate_;
+    size_t                    block_size_;
+    LedDriverPca9685<2, true> led_driver_;
 };
 
 } // namespace daisy

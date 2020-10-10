@@ -29,10 +29,10 @@ class DaisyField
     enum
     {
         KNOB_1,    /**< & */
-        KNOB_4,    /**< & */
         KNOB_2,    /**< & */
-        KNOB_5,    /**< & */
         KNOB_3,    /**< & */
+        KNOB_4,    /**< & */
+        KNOB_5,    /**< & */
         KNOB_6,    /**< & */
         KNOB_7,    /**< & */
         KNOB_8,    /**< & */
@@ -50,14 +50,6 @@ class DaisyField
 
     enum
     {
-        LED_KEY_A8, /**< & */
-        LED_KEY_A7, /**< & */
-        LED_KEY_A6, /**< & */
-        LED_KEY_A5, /**< & */
-        LED_KEY_A4, /**< & */
-        LED_KEY_A3, /**< & */
-        LED_KEY_A2, /**< & */
-        LED_KEY_A1, /**< & */
         LED_KEY_B1, /**< & */
         LED_KEY_B2, /**< & */
         LED_KEY_B3, /**< & */
@@ -66,6 +58,14 @@ class DaisyField
         LED_KEY_B6, /**< & */
         LED_KEY_B7, /**< & */
         LED_KEY_B8, /**< & */
+        LED_KEY_A8, /**< & */
+        LED_KEY_A7, /**< & */
+        LED_KEY_A6, /**< & */
+        LED_KEY_A5, /**< & */
+        LED_KEY_A4, /**< & */
+        LED_KEY_A3, /**< & */
+        LED_KEY_A2, /**< & */
+        LED_KEY_A1, /**< & */
         LED_KNOB_1, /**< & */
         LED_KNOB_2, /**< & */
         LED_KNOB_3, /**< & */
@@ -85,22 +85,33 @@ class DaisyField
     /**Initializes the Daisy Field, and all of its hardware.*/
     void Init();
 
-    /** Starts the Audio Engine, calling the specified interleaving callback when new data is ready */
-    void StartAudio(dsy_audio_callback cb)
-    {
-        dsy_audio_set_callback(DSY_AUDIO_INTERNAL, cb);
-        dsy_audio_start(DSY_AUDIO_INTERNAL);
-    }
+    /** Starts the callback
+    \cb Interleaved callback function
+    */
+    void StartAudio(dsy_audio_callback cb);
 
-    /** Starts the Audio Engine, calling the specified non-interleaving callback when new data is ready */
-    void StartAudio(dsy_audio_mc_callback cb)
-    {
-        dsy_audio_set_mc_callback(cb);
-        dsy_audio_start(DSY_AUDIO_INTERNAL);
-    }
+    /** Starts the callback
+    \cb multichannel callback function
+    */
+    void StartAudio(dsy_audio_mc_callback cb);
+
+    /**
+       Switch callback functions
+       \param cb New interleaved callback function.
+    */
+    void ChangeAudioCallback(dsy_audio_callback cb);
+
+    /**
+       Switch callback functions
+       \param cb New multichannel callback function.
+    */
+    void ChangeAudioCallback(dsy_audio_mc_callback cb);
 
     /** Starts Transfering data from the ADC */
     void StartAdc() { seed.adc.Start(); }
+
+    /** Turns on the built-in 12-bit DAC on the Daisy Seed */
+    void StartDac() { dsy_dac_start(DSY_DAC_CHN_BOTH); }
 
     /** Returns the samplerate of the audio engine. */
     inline float SampleRate() const { return samplerate_; }
@@ -141,6 +152,12 @@ class DaisyField
         // Gate Input
         gate_in_trig_ = gate_in_.Trig();
     }
+
+    /** Sets the output of CV out 1 to a value between 0-4095 that corresponds to 0-5V */
+    inline void SetCvOut1(uint16_t val) { dsy_dac_write(DSY_DAC_CHN1, val); }
+
+    /** Sets the output of CV out 1 to a value between 0-4095 that corresponds to 0-5V */
+    inline void SetCvOut2(uint16_t val) { dsy_dac_write(DSY_DAC_CHN2, val); }
 
     inline bool KeyboardState(size_t idx) const
     {
@@ -186,18 +203,19 @@ class DaisyField
      **/
     void VegasMode();
 
-    DaisySeed seed;
-    dsy_gpio  gate_out_;
+    DaisySeed                 seed;
+    OledDisplay               display;
+    dsy_gpio                  gate_out_;
+    GateIn                    gate_in_;
+    LedDriverPca9685<2, true> led_driver_;
 
   private:
     float              samplerate_, blockrate_;
     size_t             blocksize_;
     Switch             sw_[SW_LAST];
     dsy_sr_4021_handle keyboard_sr_;
-    GateIn             gate_in_;
     AnalogControl      knob_[KNOB_LAST];
     AnalogControl      cv_[CV_LAST];
-    OledDisplay        display_;
     uint8_t            keyboard_state_[16];
     uint32_t           last_led_update_; // for vegas mode
     bool               gate_in_trig_;    // True when triggered.

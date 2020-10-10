@@ -65,6 +65,15 @@ class DaisySeed
     */
     void StartAudio(dsy_audio_mc_callback cb);
 
+    /** Changes to a new interleaved callback
+     */
+    void ChangeAudioCallback(dsy_audio_callback cb);
+
+    /** Changes to a new multichannel callback
+     */
+    void ChangeAudioCallback(dsy_audio_mc_callback cb);
+
+
     /** Sets the state of the built in LED
      */
     void SetLed(bool state);
@@ -88,19 +97,17 @@ class DaisySeed
     dsy_qspi_handle  qspi_handle;  /**< & */
     dsy_audio_handle audio_handle; /**< & */
     dsy_sai_handle   sai_handle;   /**< & */
-    dsy_i2c_handle   i2c1_handle,  /**< & */
-        i2c2_handle;               /**< & */
-    AdcHandle      adc;            /**< & */
-    dsy_dac_handle dac_handle;     /**< & */
-    UsbHandle      usb_handle;     /**< & */
+    AdcHandle        adc;          /**< & */
+    dsy_dac_handle   dac_handle;   /**< & */
+    UsbHandle        usb_handle;   /**< & */
 
   private:
-    void     ConfigureSdram();
-    void     ConfigureQspi();
-    void     ConfigureAudio();
-    void     ConfigureAdc();
-    void     ConfigureDac();
-    void     ConfigureI2c();
+    void ConfigureSdram();
+    void ConfigureQspi();
+    void ConfigureAudio();
+    void ConfigureAdc();
+    void ConfigureDac();
+    //void     ConfigureI2c();
     dsy_gpio led_, testpoint_;
 };
 

@@ -7,8 +7,8 @@
 
 // # Rev3 and Rev4 with newest pinout.
 // Compatible with Seed Rev3 and Rev4
-#define SW_1_PIN 28
-#define SW_2_PIN 27
+#define SW_1_PIN 27
+#define SW_2_PIN 28
 
 #define ENC_A_PIN 26
 #define ENC_B_PIN 25
@@ -94,13 +94,22 @@ void DaisyPod::DelayMs(size_t del)
 
 void DaisyPod::StartAudio(dsy_audio_callback cb)
 {
-    dsy_audio_set_callback(DSY_AUDIO_INTERNAL, cb);
-    dsy_audio_start(DSY_AUDIO_INTERNAL);
+    seed.StartAudio(cb);
+}
+
+void DaisyPod::StartAudio(dsy_audio_mc_callback cb)
+{
+    seed.StartAudio(cb);
 }
 
 void DaisyPod::ChangeAudioCallback(dsy_audio_callback cb)
 {
-    dsy_audio_set_callback(DSY_AUDIO_INTERNAL, cb);
+    seed.ChangeAudioCallback(cb);
+}
+
+void DaisyPod::ChangeAudioCallback(dsy_audio_mc_callback cb)
+{
+    seed.ChangeAudioCallback(cb);
 }
 
 void DaisyPod::SetAudioBlockSize(size_t size)
